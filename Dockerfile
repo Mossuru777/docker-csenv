@@ -124,6 +124,7 @@ RUN apt-get -q -y update \
          tar \
          gzip \
          ca-certificates \
+         nkf \
     && useradd --uid=3434 --user-group --create-home circleci \
     && echo 'circleci ALL=NOPASSWD: ALL' >> /etc/sudoers.d/50-circleci \
     && sudo -u circleci mkdir /home/circleci/project
