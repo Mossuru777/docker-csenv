@@ -144,6 +144,10 @@ RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add
 RUN apt-get -q -y clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Move Perl location
+RUN mv /usr/bin/perl /usr/bin/perl.orig \
+    && ln -s /usr/local/bin/perl /usr/bin/perl
+
 # Switch User to www-data
 WORKDIR /var/www
 USER www-data
