@@ -76,6 +76,9 @@ CMD ["/bin/bash"]
 ################################################################################
 FROM csenv AS common_csenv-for-test
 
+# Create /var/www/html
+RUN mkdir -p /var/www/html
+
 # Install & Setup LiteSpeed
 ENV DEBIAN_FRONTEND noninteractive
 RUN wget -q -O - http://rpms.litespeedtech.com/debian/enable_lst_debian_repo.sh | bash \
@@ -129,6 +132,9 @@ RUN echo 'www-data ALL=NOPASSWD: ALL' >> /etc/sudoers.d/50-www-data \
 RUN mv /usr/bin/perl /usr/bin/perl.orig \
     && ln -s /usr/local/bin/perl /usr/bin/perl
 
+# Change Owner and Group of /var/www/html to www-data
+RUN chown -R www-data:www-data /var/www/html
+
 # Switch User to www-data
 WORKDIR /var/www
 USER www-data
@@ -176,6 +182,9 @@ ENV PATH=/home/circleci/bin:/home/circleci/.local/bin:$PATH
 # Move Perl location
 RUN mv /usr/bin/perl /usr/bin/perl.orig \
     && ln -s /usr/local/bin/perl /usr/bin/perl
+
+# Change Owner and Group of /var/www/html to circleci
+RUN chown -R circleci:circleci /var/www/html
 
 # Switch User to circleci
 WORKDIR /home/circleci
