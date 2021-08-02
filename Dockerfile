@@ -128,7 +128,7 @@ USER www-data
 
 # Define default command (Start LiteSpeed Webserver and then watch logs.)
 ENTRYPOINT ["entrypoint.sh"]
-CMD ["/usr/bin/tail -F /usr/local/lsws/logs/error.log /usr/local/lsws/logs/access.log"]
+CMD ["/usr/bin/tail", "-F", "/usr/local/lsws/logs/error.log", "/usr/local/lsws/logs/access.log"]
 
 # Define mountable directories
 VOLUME ["/var/www/html"]
