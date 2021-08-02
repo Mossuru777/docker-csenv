@@ -82,6 +82,10 @@ RUN wget -q -O - http://rpms.litespeedtech.com/debian/enable_lst_debian_repo.sh 
     && apt-get -q -y install --no-install-recommends \
          sudo \
          openlitespeed \
+#--- workaround for "[STDERR] PHP Notice:  Undefined index: LS_AI_MIME_TYPE in /usr/local/lsws/share/autoindex/default.php on line 299"
+    && cp -a /usr/local/lsws/share/autoindex/default.php /usr/local/lsws/share/autoindex/default.php.orig \
+    && sed -i -e "s@^\(\$mime_type = \$_SERVER\['LS_AI_MIME_TYPE'\]\);@\\1 ?? null;@" /usr/local/lsws/share/autoindex/default.php \
+#-------------------------------------------------------------------------------
     && mv /usr/local/lsws/conf/httpd_config.conf /usr/local/lsws/conf/httpd_config.conf.orig
 COPY httpd_config.conf /usr/local/lsws/conf/httpd_config.conf
 COPY vhconf.conf /usr/local/lsws/conf/vhosts/www/vhconf.conf
