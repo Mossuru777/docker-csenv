@@ -81,7 +81,8 @@ ENV DEBIAN_FRONTEND noninteractive
 RUN wget -q -O - http://rpms.litespeedtech.com/debian/enable_lst_debian_repo.sh | bash \
     && apt-get -q -y install --no-install-recommends \
          sudo \
-         openlitespeed
+         openlitespeed \
+    && mv /usr/local/lsws/conf/httpd_config.conf /usr/local/lsws/conf/httpd_config.conf.orig
 COPY httpd_config.conf /usr/local/lsws/conf/httpd_config.conf
 COPY vhconf.conf /usr/local/lsws/conf/vhosts/www/vhconf.conf
 
