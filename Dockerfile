@@ -15,10 +15,12 @@ RUN apt-get -q -y update \
     && apt-get -q -y install --no-install-recommends \
          sed \
          locales \
+         tzdata \
     && sed -i -e 's/^# *\(ja_JP.UTF-8.*\)/\1/' /etc/locale.gen \
     && locale-gen \
     && update-locale LANG=ja_JP.UTF-8 \
     && ldconfig
+ENV TZ Asia/Tokyo
 
 # Install ImageMagick & PerlMagick
 WORKDIR /usr/src/imagemagick
