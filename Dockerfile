@@ -139,9 +139,9 @@ RUN chown -R www-data:www-data /var/www/html
 WORKDIR /var/www
 USER www-data
 
-# Define default command (Start LiteSpeed Webserver and then watch logs.)
+# Define default command (Start LiteSpeed Webserver and then watch error logs.)
 ENTRYPOINT ["entrypoint.sh"]
-CMD ["/usr/bin/tail", "-F", "/usr/local/lsws/logs/error.log", "/usr/local/lsws/logs/access.log"]
+CMD ["/usr/bin/tail", "-F", "/usr/local/lsws/logs/stderr.log", "/usr/local/lsws/logs/error.log"]
 
 # Define mountable directories
 VOLUME ["/var/www/html"]
