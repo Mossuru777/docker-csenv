@@ -58,26 +58,38 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: csenv-for-test
+      - name: csenv-for-test-litespeed-general
         uses: docker/build-push-action@v2
         with:
           context: .
-          target: csenv-for-test
+          target: csenv-for-test-litespeed-general
           push: true
           tags: |
-            ghcr.io/${{ env.LOWER_REPOITORY_NAME }}/csenv-for-test:${{ env.VERSION_TAG }}
-            ghcr.io/${{ env.LOWER_REPOITORY_NAME }}/csenv-for-test:latest
+            ghcr.io/${{ env.LOWER_REPOITORY_NAME }}/csenv-for-test-litespeed-general:${{ env.VERSION_TAG }}
+            ghcr.io/${{ env.LOWER_REPOITORY_NAME }}/csenv-for-test-litespeed-general:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: circleci-csenv-for-test
+      - name: csenv-for-test-litespeed-circleci
         uses: docker/build-push-action@v2
         with:
           context: .
-          target: circleci-csenv-for-test
+          target: csenv-for-test-litespeed-circleci
           push: true
           tags: |
-            ghcr.io/${{ env.LOWER_REPOITORY_NAME }}/circleci-csenv-for-test:${{ env.VERSION_TAG }}
-            ghcr.io/${{ env.LOWER_REPOITORY_NAME }}/circleci-csenv-for-test:latest
+            ghcr.io/${{ env.LOWER_REPOITORY_NAME }}/csenv-for-test-litespeed-circleci:${{ env.VERSION_TAG }}
+            ghcr.io/${{ env.LOWER_REPOITORY_NAME }}/csenv-for-test-litespeed-circleci:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: csenv-for-test-apache-general
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          target: csenv-for-test-apache-general
+          push: true
+          tags: |
+            ghcr.io/${{ env.LOWER_REPOITORY_NAME }}/csenv-for-test-apache-general:${{ env.VERSION_TAG }}
+            ghcr.io/${{ env.LOWER_REPOITORY_NAME }}/csenv-for-test-apache-general:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
