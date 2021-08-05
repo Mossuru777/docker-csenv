@@ -86,7 +86,8 @@ RUN apt-get -q -y install --no-install-recommends \
     && wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
     && wget -q -O /tmp/google-chrome-stable_current_amd64.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
     && apt-get -q -y install --no-install-recommends /tmp/google-chrome-stable_current_amd64.deb \
-    && rm /tmp/google-chrome-stable_current_amd64.deb
+    && rm /tmp/google-chrome-stable_current_amd64.deb \
+    && sed -i -e 's/"\$HERE\/chrome" "\$@"/"$HERE\/chrome" "--disable-gpu" "$@"/' /opt/google/chrome/google-chrome
 
 # Clean up Apt Cache
 RUN apt-get -q clean \
