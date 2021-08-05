@@ -121,10 +121,6 @@ COPY litespeed/vhconf.conf /usr/local/lsws/conf/vhosts/www/vhconf.conf
 RUN apt-get -q clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Add a script to be executed every time the container starts.
-COPY litespeed/entrypoint.sh /usr/bin/
-RUN chmod +x /usr/bin/entrypoint.sh
-
 
 
 ################################################################################
@@ -145,7 +141,9 @@ RUN mv /usr/bin/perl /usr/bin/perl.orig \
 WORKDIR /var/www
 USER www-data
 
-# Define default command (Start LiteSpeed Webserver and then watch error logs.)
+# Define entrypoint and default command (Start LiteSpeed Webserver and then watch error logs.)
+COPY litespeed/entrypoint.sh /usr/bin/
+RUN sudo chmod +x /usr/bin/entrypoint.sh
 ENTRYPOINT ["entrypoint.sh"]
 CMD ["/usr/bin/tail", "-F", "/usr/local/lsws/logs/stderr.log", "/usr/local/lsws/logs/error.log"]
 
@@ -192,12 +190,6 @@ RUN mv /usr/bin/perl /usr/bin/perl.orig \
 # Switch User to circleci
 WORKDIR /home/circleci
 USER circleci
-
-# Define default command (Start LiteSpeed Webserver.)
-ENTRYPOINT ["entrypoint.sh"]
-
-# Expose LiteSpeed WebServer Port
-EXPOSE 80
 
 
 
