@@ -179,6 +179,7 @@ RUN useradd --uid=3434 --user-group --create-home circleci \
          gzip \
          ca-certificates \
          nkf \
+         zip \
     && apt-get -q clean \
     && rm -rf /var/lib/apt/lists/*
 ENV PATH=/home/circleci/bin:/home/circleci/.local/bin:$PATH
