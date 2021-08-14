@@ -7,17 +7,17 @@ MAINTAINER Mossuru777 "mossuru777@gmail.com"
 
 # Setup
 ENV DEBIAN_FRONTEND noninteractive
+ENV TZ Asia/Tokyo
 RUN apt-get -q update \
     && apt-get -q -y install --no-install-recommends \
          sed \
          locales \
          tzdata \
     && sed -i -e 's/^# *\(ja_JP.UTF-8.*\)/\1/' /etc/locale.gen \
-    && locale-gen
-ENV TZ Asia/Tokyo
+    && locale-gen \
 
 # Install ImageMagick & PerlMagick
-RUN apt-get -q -y autoremove \
+    && apt-get -q -y autoremove \
       imagemagick \
       imagemagick-6.q16 \
       imagemagick-6-common \
@@ -36,10 +36,10 @@ RUN apt-get -q -y autoremove \
     && make install \
     && cd /root \
     && rm -fr /usr/src/imagemagick /tmp/** \
-    && ldconfig
+    && ldconfig \
 
 # Clean up Apt Cache
-RUN apt-get -q clean \
+    && apt-get -q clean \
     && rm -rf /var/lib/apt/lists/*
 
 
@@ -67,30 +67,30 @@ RUN cpanm --notest --installdeps /tmp \
 FROM csenv AS base_csenv-for-test
 
 # Create /var/www/html
-RUN mkdir -p /var/www/html
+RUN mkdir -p /var/www/html \
 
 # Install common packages
-RUN apt-get -q update \
+    && apt-get -q update \
     && apt-get -q -y install --no-install-recommends \
-         sudo
+         sudo \
 
 # Install Node.js (current)
-RUN curl -fsSL https://deb.nodesource.com/setup_current.x | bash - \
+    && curl -fsSL https://deb.nodesource.com/setup_current.x | bash - \
     && apt-get -q -y install --no-install-recommends \
-         nodejs
+         nodejs \
 
 # Install Google Chrome
-RUN apt-get -q -y install --no-install-recommends \
-      gnupg \
-      fonts-ipafont \
+    && apt-get -q -y install --no-install-recommends \
+         gnupg \
+         fonts-ipafont \
     && wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
     && wget -q -O /tmp/google-chrome-stable_current_amd64.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
     && apt-get -q -y install --no-install-recommends /tmp/google-chrome-stable_current_amd64.deb \
     && rm /tmp/google-chrome-stable_current_amd64.deb \
-    && sed -i -e 's/"\$HERE\/chrome" "\$@"/"$HERE\/chrome" "--disable-gpu" "$@"/' /opt/google/chrome/google-chrome
+    && sed -i -e 's/"\$HERE\/chrome" "\$@"/"$HERE\/chrome" "--disable-gpu" "$@"/' /opt/google/chrome/google-chrome \
 
 # Clean up Apt Cache
-RUN apt-get -q clean \
+    && apt-get -q clean \
     && rm -rf /var/lib/apt/lists/*
 
 
@@ -113,13 +113,11 @@ RUN wget -q -O - http://rpms.litespeedtech.com/debian/enable_lst_debian_repo.sh 
     && cp -a /usr/local/lsws/share/autoindex/default.php /usr/local/lsws/share/autoindex/default.php.orig \
     && sed -i -e "s@^\(\$mime_type = \$_SERVER\['LS_AI_MIME_TYPE'\]\);@\\1 ?? null;@" /usr/local/lsws/share/autoindex/default.php \
 #-------------------------------------------------------------------------------
-    && mv /usr/local/lsws/conf/httpd_config.conf /usr/local/lsws/conf/httpd_config.conf.orig
+    && mv /usr/local/lsws/conf/httpd_config.conf /usr/local/lsws/conf/httpd_config.conf.orig \
+    && apt-get -q clean \
+    && rm -rf /var/lib/apt/lists/*
 COPY litespeed/httpd_config.conf /usr/local/lsws/conf/httpd_config.conf
 COPY litespeed/vhconf.conf /usr/local/lsws/conf/vhosts/www/vhconf.conf
-
-# Clean up Apt Cache
-RUN apt-get -q clean \
-    && rm -rf /var/lib/apt/lists/*
 
 
 
@@ -129,21 +127,25 @@ RUN apt-get -q clean \
 ################################################################################
 FROM base_csenv-for-test-litespeed AS csenv-for-test-litespeed-general
 
+# Copy entrypoint script
+COPY litespeed/entrypoint.sh /usr/bin/
+
 # Configure User www-data to allow sudo
 RUN echo 'www-data ALL=NOPASSWD: ALL' >> /etc/sudoers.d/50-www-data \
-    && echo 'Defaults    env_keep += "DEBIAN_FRONTEND"' >> /etc/sudoers.d/env_keep
+    && echo 'Defaults    env_keep += "DEBIAN_FRONTEND"' >> /etc/sudoers.d/env_keep \
 
 # Move Perl location
-RUN mv /usr/bin/perl /usr/bin/perl.orig \
-    && ln -s /usr/local/bin/perl /usr/bin/perl
+    && mv /usr/bin/perl /usr/bin/perl.orig \
+    && ln -s /usr/local/bin/perl /usr/bin/perl \
+
+# Make entrypoint script executable
+    && chmod +x /usr/bin/entrypoint.sh
 
 # Switch User to www-data
 WORKDIR /var/www
 USER www-data
 
 # Define entrypoint and default command (Start LiteSpeed Webserver and then watch error logs.)
-COPY litespeed/entrypoint.sh /usr/bin/
-RUN sudo chmod +x /usr/bin/entrypoint.sh
 ENTRYPOINT ["entrypoint.sh"]
 CMD ["/usr/bin/tail", "-F", "/usr/local/lsws/logs/stderr.log", "/usr/local/lsws/logs/error.log"]
 
@@ -167,7 +169,6 @@ FROM base_csenv-for-test-litespeed AS csenv-for-test-litespeed-circleci
 # Setup for CircleCI
 # - Add User circleci and config to allow sudo
 # - Pre-Install packages and setup for CircleCI
-# - Set Environment Variables for CircleCI
 RUN useradd --uid=3434 --user-group --create-home circleci \
     && echo 'circleci ALL=NOPASSWD: ALL' >> /etc/sudoers.d/50-circleci \
     && sudo -u circleci mkdir /home/circleci/project \
@@ -181,12 +182,14 @@ RUN useradd --uid=3434 --user-group --create-home circleci \
          nkf \
          zip \
     && apt-get -q clean \
-    && rm -rf /var/lib/apt/lists/*
-ENV PATH=/home/circleci/bin:/home/circleci/.local/bin:$PATH
+    && rm -rf /var/lib/apt/lists/* \
 
 # Move Perl location
-RUN mv /usr/bin/perl /usr/bin/perl.orig \
+    && mv /usr/bin/perl /usr/bin/perl.orig \
     && ln -s /usr/local/bin/perl /usr/bin/perl
+
+# Set Environment Variables for CircleCI
+ENV PATH=/home/circleci/bin:/home/circleci/.local/bin:$PATH
 
 # Switch User to circleci
 WORKDIR /home/circleci
@@ -200,29 +203,33 @@ USER circleci
 ################################################################################
 FROM base_csenv-for-test AS csenv-for-test-apache-general
 
-# Install & Setup Apache
-RUN apt-get -q update \
-    && apt-get -q -y install --no-install-recommends \
-         apache2
+# Copy entrypoint script
+COPY apache/entrypoint.sh /usr/bin/
 
-# Enable site configuration
+# Copy site configuration
 COPY apache/all-catch.conf /etc/apache2/sites-available/all-catch.conf
-RUN a2enmod cgi \
-    && a2dissite 000-default \
-    && a2ensite all-catch \
-    && service apache2 stop
 
 # Configure User www-data to allow sudo
 RUN echo 'www-data ALL=NOPASSWD: ALL' >> /etc/sudoers.d/50-www-data \
-    && echo 'Defaults    env_keep += "DEBIAN_FRONTEND"' >> /etc/sudoers.d/env_keep
+    && echo 'Defaults    env_keep += "DEBIAN_FRONTEND"' >> /etc/sudoers.d/env_keep \
+
+# Install & Setup Apache
+    && apt-get -q update \
+    && apt-get -q -y install --no-install-recommends \
+         apache2 \
+
+# Enable site configuration
+    && a2enmod cgi \
+    && a2dissite 000-default \
+    && a2ensite all-catch \
+    && service apache2 stop \
 
 # Move Perl location
-RUN mv /usr/bin/perl /usr/bin/perl.orig \
-    && ln -s /usr/local/bin/perl /usr/bin/perl
+    && mv /usr/bin/perl /usr/bin/perl.orig \
+    && ln -s /usr/local/bin/perl /usr/bin/perl \
 
-# Add a script to be executed every time the container starts.
-COPY apache/entrypoint.sh /usr/bin/
-RUN chmod +x /usr/bin/entrypoint.sh
+# Make entrypoint script executable
+    && chmod +x /usr/bin/entrypoint.sh
 
 # Switch User to www-data
 WORKDIR /var/www
