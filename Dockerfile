@@ -1,9 +1,11 @@
 ################################################################################
-# Perl5.26.3 with ImageMagick6.9.10-86
-# Stage Name: perl5.26.3-with-imagemagick6.9.10-86
+# CSEnv
+# Stage Name: csenv
 ################################################################################
-FROM perl:5.26.3-buster AS perl5.26.3-with-imagemagick6.9.10-86
+FROM perl:5.26.3-buster AS csenv
 MAINTAINER Mossuru777 "mossuru777@gmail.com"
+
+COPY perl/cpanfile /tmp/
 
 # Setup
 ENV DEBIAN_FRONTEND noninteractive
@@ -35,24 +37,15 @@ RUN apt-get -q update \
     && make -j$(nproc) \
     && make install \
     && cd /root \
-    && rm -fr /usr/src/imagemagick /tmp/** \
+    && rm -fr /usr/src/imagemagick \
     && ldconfig \
 
 # Clean up Apt Cache
     && apt-get -q clean \
-    && rm -rf /var/lib/apt/lists/*
-
-
-
-################################################################################
-# CSEnv
-# Stage Name: csenv
-################################################################################
-FROM perl5.26.3-with-imagemagick6.9.10-86 AS csenv
+    && rm -rf /var/lib/apt/lists/* \
 
 # Install CPAN modules
-COPY cpanfile /tmp/
-RUN cpanm --notest --installdeps /tmp \
+    && cpanm --notest --installdeps /tmp \
     && rm -fr /root/.cpanm /tmp/**
 
 

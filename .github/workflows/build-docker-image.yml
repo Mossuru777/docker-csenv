@@ -36,16 +36,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: perl5.26.3-with-imagemagick6.9.10-86
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          target: perl5.26.3-with-imagemagick6.9.10-86
-          push: true
-          tags: |
-            ghcr.io/${{ env.LOWER_REPOITORY_NAME }}/perl5.26.3-with-imagemagick6.9.10-86:latest
-          cache-from: type=gha
-
       - name: csenv
         uses: docker/build-push-action@v2
         with:
