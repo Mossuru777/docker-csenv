@@ -191,6 +191,33 @@ USER circleci
 
 
 ################################################################################
+# [Base Stage] CSEnv for Test with Apache
+# Stage Name: base_csenv-for-test-apache
+#
+# *** DO NOT PUBLISH AS A DOCKER IMAGE ***
+#
+################################################################################
+FROM base_csenv-for-test AS base_csenv-for-test-apache
+
+# Copy site configuration
+COPY apache/all-catch.conf /etc/apache2/sites-available/all-catch.conf
+
+# Install Apache
+RUN apt-get -q update \
+    && apt-get -q -y install --no-install-recommends \
+         apache2 \
+    && apt-get -q clean \
+    && rm -rf /var/lib/apt/lists/* \
+
+# Enable site configuration
+    && a2enmod cgi \
+    && a2dissite 000-default \
+    && a2ensite all-catch \
+    && service apache2 stop
+
+
+
+################################################################################
 # CSEnv for Test with Apache for General
 # Stage Name: csenv-for-test-apache-general
 ################################################################################
@@ -199,23 +226,9 @@ FROM base_csenv-for-test AS csenv-for-test-apache-general
 # Copy entrypoint script
 COPY apache/entrypoint.sh /usr/bin/
 
-# Copy site configuration
-COPY apache/all-catch.conf /etc/apache2/sites-available/all-catch.conf
-
 # Configure User www-data to allow sudo
 RUN echo 'www-data ALL=NOPASSWD: ALL' >> /etc/sudoers.d/50-www-data \
     && echo 'Defaults    env_keep += "DEBIAN_FRONTEND"' >> /etc/sudoers.d/env_keep \
-
-# Install & Setup Apache
-    && apt-get -q update \
-    && apt-get -q -y install --no-install-recommends \
-         apache2 \
-
-# Enable site configuration
-    && a2enmod cgi \
-    && a2dissite 000-default \
-    && a2ensite all-catch \
-    && service apache2 stop \
 
 # Move Perl location
     && mv /usr/bin/perl /usr/bin/perl.orig \
@@ -237,3 +250,40 @@ VOLUME ["/var/www/html"]
 
 # Expose Apache WebServer Port
 EXPOSE 80
+
+
+
+################################################################################
+# CSEnv for Test with Apache for CircleCI
+# Stage Name: csenv-for-test-apache-circleci
+################################################################################
+FROM base_csenv-for-test-apache AS csenv-for-test-apache-circleci
+
+# Setup for CircleCI
+# - Add User circleci and config to allow sudo
+# - Pre-Install packages and setup for CircleCI
+RUN useradd --uid=3434 --user-group --create-home circleci \
+    && echo 'circleci ALL=NOPASSWD: ALL' >> /etc/sudoers.d/50-circleci \
+    && sudo -u circleci mkdir /home/circleci/project \
+    && apt-get -q update \
+    && apt-get -q -y install --no-install-recommends \
+         git \
+         ssh \
+         tar \
+         gzip \
+         ca-certificates \
+         nkf \
+         zip \
+    && apt-get -q clean \
+    && rm -rf /var/lib/apt/lists/* \
+
+# Move Perl location
+    && mv /usr/bin/perl /usr/bin/perl.orig \
+    && ln -s /usr/local/bin/perl /usr/bin/perl
+
+# Set Environment Variables for CircleCI
+ENV PATH=/home/circleci/bin:/home/circleci/.local/bin:$PATH
+
+# Switch User to circleci
+WORKDIR /home/circleci
+USER circleci

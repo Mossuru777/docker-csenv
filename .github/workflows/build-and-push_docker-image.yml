@@ -6,8 +6,8 @@ on:
       - main
 
 jobs:
-  build:
-    name: Build
+  csenv:
+    name: Build and Push csenv:latest (csenv)
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout code
@@ -24,34 +24,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
-      - name: Build Docker Image (All Targets)
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          push: false
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  push_csenv:
-    name: Push csenv:latest (csenv)
-    needs: build
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 1
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-
-      - name: Push Image to Docker Hub
+      - name: Build and Push Image to Docker Hub
         uses: docker/build-push-action@v2
         with:
           context: .
@@ -60,10 +33,55 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_HUB_USERNAME }}/csenv:latest
           cache-from: type=gha
+          cache-to: type=gha
 
-  push_csenv-for-test-litespeed-general:
-    name: Push csenv:test-litespeed-general-latest (csenv-for-test-litespeed-general)
-    needs: build
+  base_csenv-for-test:
+    name: Base Image Build (base_csenv-for-test)
+    needs: csenv
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Build Image
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          target: base_csenv-for-test
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha
+
+  base_csenv-for-test-litespeed:
+    name: Base Image Build (base_csenv-for-test-litespeed)
+    needs: base_csenv-for-test
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Build Image
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          target: base_csenv-for-test-litespeed
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha
+
+  csenv-for-test-litespeed-general:
+    name: Build and Push csenv:test-litespeed-general-latest (csenv-for-test-litespeed-general)
+    needs: base_csenv-for-test-litespeed
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout code
@@ -80,7 +98,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
-      - name: Push Image to Docker Hub
+      - name: Build and Push Image to Docker Hub
         uses: docker/build-push-action@v2
         with:
           context: .
@@ -90,9 +108,9 @@ jobs:
             ${{ secrets.DOCKER_HUB_USERNAME }}/csenv:test-litespeed-general-latest
           cache-from: type=gha
 
-  push_csenv-for-test-litespeed-circleci:
-    name: Push csenv:test-litespeed-circleci-latest (csenv-for-test-litespeed-circleci)
-    needs: build
+  csenv-for-test-litespeed-circleci:
+    name: Build and Push csenv:test-litespeed-circleci-latest (csenv-for-test-litespeed-circleci)
+    needs: base_csenv-for-test-litespeed
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout code
@@ -109,7 +127,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
-      - name: Push Image to Docker Hub
+      - name: Build and Push Image to Docker Hub
         uses: docker/build-push-action@v2
         with:
           context: .
@@ -119,9 +137,31 @@ jobs:
             ${{ secrets.DOCKER_HUB_USERNAME }}/csenv:test-litespeed-circleci-latest
           cache-from: type=gha
 
-  push_csenv-for-test-apache-general:
-    name: Push csenv:test-apache-general-latest (csenv-for-test-apache-general)
-    needs: build
+  base_csenv-for-test-apache:
+    name: Base Image Build (base_csenv-for-test-apache)
+    needs: base_csenv-for-test
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Build Image
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          target: base_csenv-for-test-apache
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha
+
+  csenv-for-test-apache-general:
+    name: Build and Push csenv:test-apache-general-latest (csenv-for-test-apache-general)
+    needs: base_csenv-for-test-apache
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout code
@@ -138,7 +178,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
-      - name: Push Image to Docker Hub
+      - name: Build and Push Image to Docker Hub
         uses: docker/build-push-action@v2
         with:
           context: .
@@ -146,4 +186,33 @@ jobs:
           push: true
           tags: |
             ${{ secrets.DOCKER_HUB_USERNAME }}/csenv:test-apache-general-latest
+          cache-from: type=gha
+
+  csenv-for-test-apache-circleci:
+    name: Build and Push csenv:test-apache-circleci-latest (csenv-for-test-apache-circleci)
+    needs: base_csenv-for-test-apache
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Build and Push Image to Docker Hub
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          target: csenv-for-test-apache-circleci
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/csenv:test-apache-circleci-latest
           cache-from: type=gha
