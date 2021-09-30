@@ -80,7 +80,6 @@ RUN mkdir -p /var/www/html \
     && wget -q -O /tmp/google-chrome-stable_current_amd64.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
     && apt-get -q -y install --no-install-recommends /tmp/google-chrome-stable_current_amd64.deb \
     && rm /tmp/google-chrome-stable_current_amd64.deb \
-    && sed -i -e 's/"\$HERE\/chrome" "\$@"/"$HERE\/chrome" "--disable-gpu" "$@"/' /opt/google/chrome/google-chrome \
 
 # Clean up Apt Cache
     && apt-get -q clean \
@@ -176,6 +175,9 @@ RUN useradd --uid=3434 --user-group --create-home circleci \
          zip \
     && apt-get -q clean \
     && rm -rf /var/lib/apt/lists/* \
+
+# Modify Chrome startup options
+    && sed -i 's|HERE/chrome"|HERE/chrome" --disable-setuid-sandbox --no-sandbox|g' "/opt/google/chrome/google-chrome" \
 
 # Move Perl location
     && mv /usr/bin/perl /usr/bin/perl.orig \
@@ -276,6 +278,9 @@ RUN useradd --uid=3434 --user-group --create-home circleci \
          zip \
     && apt-get -q clean \
     && rm -rf /var/lib/apt/lists/* \
+
+# Modify Chrome startup options
+    && sed -i 's|HERE/chrome"|HERE/chrome" --disable-setuid-sandbox --no-sandbox|g' "/opt/google/chrome/google-chrome" \
 
 # Move Perl location
     && mv /usr/bin/perl /usr/bin/perl.orig \
