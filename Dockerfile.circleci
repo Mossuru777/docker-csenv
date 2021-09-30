@@ -1,0 +1,155 @@
+################################################################################
+# [Base Stage] CSEnv for Test for CircleCI
+# Stage Name: base_csenv-for-test-circleci
+#
+# *** DO NOT PUBLISH AS A DOCKER IMAGE ***
+#
+################################################################################
+FROM circleci/node:current-browsers AS base_csenv-for-test-circleci
+
+USER root
+
+COPY perl/cpanfile /tmp/
+COPY perl/*.patch /usr/src/perl/
+
+# Setup
+ENV DEBIAN_FRONTEND noninteractive
+ENV TZ Asia/Tokyo
+RUN apt-get -q update \
+    && apt-get -q -y install --no-install-recommends \
+        apt-utils \
+        nkf \
+        sed \
+        locales \
+# Install font for Google Chrome
+        fonts-ipafont \
+    && sed -i -e 's/^# *\(ja_JP.UTF-8.*\)/\1/' /etc/locale.gen \
+    && locale-gen \
+    && update-locale LANG=ja_JP.UTF-8 \
+
+# Create /var/www/html
+    && mkdir -p /var/www/html \
+
+# Install Perl 5.26.3 & App::cpanminus
+# (ref: https://github.com/Perl/docker-perl/tree/22f7d649e28846bda4af1b08f60cbd6d31f35489/eol/5.026.003-main-buster)
+    && mkdir -p /usr/src/perl \
+    && cd /usr/src/perl \
+    && curl -SL https://www.cpan.org/src/5.0/perl-5.26.3.tar.bz2 -o perl-5.26.3.tar.bz2 \
+    && echo '9ff35a613213f29ab53975141af6825ae7d4408895538cac0922e47ab92a1477 *perl-5.26.3.tar.bz2' | sha256sum -c - \
+    && tar --strip-components=1 -xaf perl-5.26.3.tar.bz2 -C /usr/src/perl \
+    && rm perl-5.26.3.tar.bz2 \
+    && cat *.patch | patch -p1 \
+    && gnuArch="$(dpkg-architecture --query DEB_BUILD_GNU_TYPE)" \
+    && archBits="$(dpkg-architecture --query DEB_BUILD_ARCH_BITS)" \
+    && archFlag="$([ "$archBits" = '64' ] && echo '-Duse64bitall' || echo '-Duse64bitint')" \
+    && ./Configure -Darchname="$gnuArch" "$archFlag" -Duseshrplib -Dvendorprefix=/usr/local  -des \
+    && make -j$(nproc) \
+    && TEST_JOBS=$(nproc) make test_harness \
+    && make install \
+    && cd /usr/src \
+    && curl -LO https://www.cpan.org/authors/id/M/MI/MIYAGAWA/App-cpanminus-1.7044.tar.gz \
+    && echo '9b60767fe40752ef7a9d3f13f19060a63389a5c23acc3e9827e19b75500f81f3 *App-cpanminus-1.7044.tar.gz' | sha256sum -c - \
+    && tar -xzf App-cpanminus-1.7044.tar.gz && cd App-cpanminus-1.7044 && perl bin/cpanm . && cd /root \
+    && true \
+#    && rm -fr ./cpanm /root/.cpanm /usr/src/perl /usr/src/App-cpanminus-1.7044* /tmp/* \
+
+# Install ImageMagick & PerlMagick \
+    && apt-get -q -y autoremove \
+      imagemagick \
+      imagemagick-6.q16 \
+      imagemagick-6-common \
+    && apt-get -y install --no-install-recommends \
+        libgif7 \
+        libgif-dev \
+        libpng16-16 \
+        libpng-dev \
+    && mkdir -p /usr/src/imagemagick \
+    && cd /usr/src/imagemagick \
+    && curl -sSL https://github.com/ImageMagick/ImageMagick6/archive/refs/tags/6.9.10-86.tar.gz -o imagemagick-6.9.10-86.tar.gz \
+    && echo '82c585b4d1fa599a5fd510342c552c20e6b0edab4d837a62aaaed34b5b356890 imagemagick-6.9.10-86.tar.gz' | sha256sum -c - \
+    && mkdir -p /usr/src/imagemagick \
+    && tar --strip-components=1 -xaf imagemagick-6.9.10-86.tar.gz -C /usr/src/imagemagick \
+    && cd /usr/src/imagemagick \
+    && ./configure LDFLAGS="-L/usr/local/lib/perl5/5.26.3/x86_64-linux-gnu/CORE" --enable-shared --with-perl=/usr/local/bin/perl \
+    && make -j$(nproc) \
+    && make install \
+    && cd /root \
+    && rm -fr /usr/src/imagemagick \
+    && ldconfig \
+
+# Install common packages
+    && apt-get -q update \
+    && apt-get -q -y install --no-install-recommends \
+         sudo \
+
+# Clean up Apt Cache
+    && apt-get -q clean \
+    && rm -rf /var/lib/apt/lists/* \
+
+# Install CPAN modules
+    && cpanm --notest --installdeps /tmp \
+    && rm -fr /root/.cpanm /tmp/**
+
+
+################################################################################
+# CSEnv for Test with LiteSpeed for CircleCI
+# Stage Name: csenv-for-test-litespeed-circleci
+################################################################################
+FROM base_csenv-for-test-circleci AS csenv-for-test-litespeed-circleci
+
+# Install & Setup LiteSpeed
+ENV DEBIAN_FRONTEND noninteractive
+RUN wget -q -O - http://rpms.litespeedtech.com/debian/enable_lst_debian_repo.sh | bash \
+    && apt-get -q -y install --no-install-recommends \
+         openlitespeed \
+#--- workaround for "[STDERR] PHP Notice:  Undefined index: LS_AI_MIME_TYPE in /usr/local/lsws/share/autoindex/default.php on line 299"
+    && cp -a /usr/local/lsws/share/autoindex/default.php /usr/local/lsws/share/autoindex/default.php.orig \
+    && sed -i -e "s@^\(\$mime_type = \$_SERVER\['LS_AI_MIME_TYPE'\]\);@\\1 ?? null;@" /usr/local/lsws/share/autoindex/default.php \
+#-------------------------------------------------------------------------------
+    && mv /usr/local/lsws/conf/httpd_config.conf /usr/local/lsws/conf/httpd_config.conf.orig \
+    && apt-get -q clean \
+    && rm -rf /var/lib/apt/lists/* \
+
+# Move Perl location
+    && mv /usr/bin/perl /usr/bin/perl.orig \
+    && ln -s /usr/local/bin/perl /usr/bin/perl
+
+# Copy site configuration
+COPY litespeed/httpd_config.conf /usr/local/lsws/conf/httpd_config.conf
+COPY litespeed/vhconf.conf /usr/local/lsws/conf/vhosts/www/vhconf.conf
+
+# Switch User to circleci
+WORKDIR /home/circleci
+USER circleci
+
+
+
+################################################################################
+# CSEnv for Test with Apache for CircleCI
+# Stage Name: csenv-for-test-apache-circleci
+################################################################################
+FROM base_csenv-for-test-circleci AS csenv-for-test-apache-circleci
+
+# Copy site configuration
+COPY apache/all-catch.conf /etc/apache2/sites-available/all-catch.conf
+
+# Install Apache
+RUN apt-get -q update \
+    && apt-get -q -y install --no-install-recommends \
+         apache2 \
+    && apt-get -q clean \
+    && rm -rf /var/lib/apt/lists/* \
+
+# Enable site configuration
+    && a2enmod cgi \
+    && a2dissite 000-default \
+    && a2ensite all-catch \
+    && service apache2 stop \
+
+# Move Perl location
+    && mv /usr/bin/perl /usr/bin/perl.orig \
+    && ln -s /usr/local/bin/perl /usr/bin/perl
+
+# Switch User to circleci
+WORKDIR /home/circleci
+USER circleci

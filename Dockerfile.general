@@ -51,13 +51,13 @@ RUN apt-get -q update \
 
 
 ################################################################################
-# [Base Stage] CSEnv for Test
-# Stage Name: base_csenv-for-test
+# [Base Stage] CSEnv for Test for General
+# Stage Name: base_csenv-for-test-general
 #
 # *** DO NOT PUBLISH AS A DOCKER IMAGE ***
 #
 ################################################################################
-FROM csenv AS base_csenv-for-test
+FROM csenv AS base_csenv-for-test-general
 
 # Create /var/www/html
 RUN mkdir -p /var/www/html \
@@ -88,17 +88,25 @@ RUN mkdir -p /var/www/html \
 
 
 ################################################################################
-# [Base Stage] CSEnv for Test with LiteSpeed
-# Stage Name: base_csenv-for-test-litespeed
-#
-# *** DO NOT PUBLISH AS A DOCKER IMAGE ***
-#
+# CSEnv for Test with LiteSpeed for General
+# Stage Name: csenv-for-test-litespeed-general
 ################################################################################
-FROM base_csenv-for-test AS base_csenv-for-test-litespeed
+FROM base_csenv-for-test-general AS csenv-for-test-litespeed-general
+
+ENV DEBIAN_FRONTEND noninteractive
+
+# Copy site configuration
+COPY litespeed/httpd_config.conf /usr/local/lsws/conf/httpd_config.conf
+COPY litespeed/vhconf.conf /usr/local/lsws/conf/vhosts/www/vhconf.conf
+
+# Copy entrypoint script
+COPY litespeed/entrypoint.sh /usr/bin/
+
+# Make entrypoint script executable
+RUN chmod +x /usr/bin/entrypoint.sh \
 
 # Install & Setup LiteSpeed
-ENV DEBIAN_FRONTEND noninteractive
-RUN wget -q -O - http://rpms.litespeedtech.com/debian/enable_lst_debian_repo.sh | bash \
+    && wget -q -O - http://rpms.litespeedtech.com/debian/enable_lst_debian_repo.sh | bash \
     && apt-get -q -y install --no-install-recommends \
          openlitespeed \
 #--- workaround for "[STDERR] PHP Notice:  Undefined index: LS_AI_MIME_TYPE in /usr/local/lsws/share/autoindex/default.php on line 299"
@@ -107,31 +115,15 @@ RUN wget -q -O - http://rpms.litespeedtech.com/debian/enable_lst_debian_repo.sh 
 #-------------------------------------------------------------------------------
     && mv /usr/local/lsws/conf/httpd_config.conf /usr/local/lsws/conf/httpd_config.conf.orig \
     && apt-get -q clean \
-    && rm -rf /var/lib/apt/lists/*
-COPY litespeed/httpd_config.conf /usr/local/lsws/conf/httpd_config.conf
-COPY litespeed/vhconf.conf /usr/local/lsws/conf/vhosts/www/vhconf.conf
-
-
-
-################################################################################
-# CSEnv for Test with LiteSpeed for General
-# Stage Name: csenv-for-test-litespeed-general
-################################################################################
-FROM base_csenv-for-test-litespeed AS csenv-for-test-litespeed-general
-
-# Copy entrypoint script
-COPY litespeed/entrypoint.sh /usr/bin/
+    && rm -rf /var/lib/apt/lists/* \
 
 # Configure User www-data to allow sudo
-RUN echo 'www-data ALL=NOPASSWD: ALL' >> /etc/sudoers.d/50-www-data \
+    && echo 'www-data ALL=NOPASSWD: ALL' >> /etc/sudoers.d/50-www-data \
     && echo 'Defaults    env_keep += "DEBIAN_FRONTEND"' >> /etc/sudoers.d/env_keep \
 
 # Move Perl location
     && mv /usr/bin/perl /usr/bin/perl.orig \
-    && ln -s /usr/local/bin/perl /usr/bin/perl \
-
-# Make entrypoint script executable
-    && chmod +x /usr/bin/entrypoint.sh
+    && ln -s /usr/local/bin/perl /usr/bin/perl
 
 # Switch User to www-data
 WORKDIR /var/www
@@ -153,59 +145,22 @@ EXPOSE 80
 
 
 ################################################################################
-# CSEnv for Test with LiteSpeed for CircleCI
-# Stage Name: csenv-for-test-litespeed-circleci
+# CSEnv for Test with Apache for General
+# Stage Name: csenv-for-test-apache-general
 ################################################################################
-FROM base_csenv-for-test-litespeed AS csenv-for-test-litespeed-circleci
-
-# Setup for CircleCI
-# - Add User circleci and config to allow sudo
-# - Pre-Install packages and setup for CircleCI
-RUN useradd --uid=3434 --user-group --create-home circleci \
-    && echo 'circleci ALL=NOPASSWD: ALL' >> /etc/sudoers.d/50-circleci \
-    && sudo -u circleci mkdir /home/circleci/project \
-    && apt-get -q update \
-    && apt-get -q -y install --no-install-recommends \
-         git \
-         ssh \
-         tar \
-         gzip \
-         ca-certificates \
-         nkf \
-         zip \
-    && apt-get -q clean \
-    && rm -rf /var/lib/apt/lists/* \
-
-# Modify Chrome startup options
-    && sed -i 's|HERE/chrome"|HERE/chrome" --disable-setuid-sandbox --no-sandbox|g' "/opt/google/chrome/google-chrome" \
-
-# Move Perl location
-    && mv /usr/bin/perl /usr/bin/perl.orig \
-    && ln -s /usr/local/bin/perl /usr/bin/perl
-
-# Set Environment Variables for CircleCI
-ENV PATH=/home/circleci/bin:/home/circleci/.local/bin:$PATH
-
-# Switch User to circleci
-WORKDIR /home/circleci
-USER circleci
-
-
-
-################################################################################
-# [Base Stage] CSEnv for Test with Apache
-# Stage Name: base_csenv-for-test-apache
-#
-# *** DO NOT PUBLISH AS A DOCKER IMAGE ***
-#
-################################################################################
-FROM base_csenv-for-test AS base_csenv-for-test-apache
+FROM base_csenv-for-test-general AS csenv-for-test-apache-general
 
 # Copy site configuration
 COPY apache/all-catch.conf /etc/apache2/sites-available/all-catch.conf
 
+# Copy entrypoint script
+COPY apache/entrypoint.sh /usr/bin/
+
+# Make entrypoint script executable
+RUN chmod +x /usr/bin/entrypoint.sh \
+
 # Install Apache
-RUN apt-get -q update \
+    && apt-get -q update \
     && apt-get -q -y install --no-install-recommends \
          apache2 \
     && apt-get -q clean \
@@ -215,29 +170,15 @@ RUN apt-get -q update \
     && a2enmod cgi \
     && a2dissite 000-default \
     && a2ensite all-catch \
-    && service apache2 stop
-
-
-
-################################################################################
-# CSEnv for Test with Apache for General
-# Stage Name: csenv-for-test-apache-general
-################################################################################
-FROM base_csenv-for-test AS csenv-for-test-apache-general
-
-# Copy entrypoint script
-COPY apache/entrypoint.sh /usr/bin/
+    && service apache2 stop \
 
 # Configure User www-data to allow sudo
-RUN echo 'www-data ALL=NOPASSWD: ALL' >> /etc/sudoers.d/50-www-data \
+    && echo 'www-data ALL=NOPASSWD: ALL' >> /etc/sudoers.d/50-www-data \
     && echo 'Defaults    env_keep += "DEBIAN_FRONTEND"' >> /etc/sudoers.d/env_keep \
 
 # Move Perl location
     && mv /usr/bin/perl /usr/bin/perl.orig \
-    && ln -s /usr/local/bin/perl /usr/bin/perl \
-
-# Make entrypoint script executable
-    && chmod +x /usr/bin/entrypoint.sh
+    && ln -s /usr/local/bin/perl /usr/bin/perl
 
 # Switch User to www-data
 WORKDIR /var/www
@@ -252,43 +193,3 @@ VOLUME ["/var/www/html"]
 
 # Expose Apache WebServer Port
 EXPOSE 80
-
-
-
-################################################################################
-# CSEnv for Test with Apache for CircleCI
-# Stage Name: csenv-for-test-apache-circleci
-################################################################################
-FROM base_csenv-for-test-apache AS csenv-for-test-apache-circleci
-
-# Setup for CircleCI
-# - Add User circleci and config to allow sudo
-# - Pre-Install packages and setup for CircleCI
-RUN useradd --uid=3434 --user-group --create-home circleci \
-    && echo 'circleci ALL=NOPASSWD: ALL' >> /etc/sudoers.d/50-circleci \
-    && sudo -u circleci mkdir /home/circleci/project \
-    && apt-get -q update \
-    && apt-get -q -y install --no-install-recommends \
-         git \
-         ssh \
-         tar \
-         gzip \
-         ca-certificates \
-         nkf \
-         zip \
-    && apt-get -q clean \
-    && rm -rf /var/lib/apt/lists/* \
-
-# Modify Chrome startup options
-    && sed -i 's|HERE/chrome"|HERE/chrome" --disable-setuid-sandbox --no-sandbox|g' "/opt/google/chrome/google-chrome" \
-
-# Move Perl location
-    && mv /usr/bin/perl /usr/bin/perl.orig \
-    && ln -s /usr/local/bin/perl /usr/bin/perl
-
-# Set Environment Variables for CircleCI
-ENV PATH=/home/circleci/bin:/home/circleci/.local/bin:$PATH
-
-# Switch User to circleci
-WORKDIR /home/circleci
-USER circleci
