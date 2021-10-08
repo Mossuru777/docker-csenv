@@ -1,0 +1,111 @@
+name: Check Chrome Update
+
+on:
+  schedule:
+    - cron: '0 19 * * *'
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: Check Chrome Update
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Fetch Latest Version
+        id: latest-fetcher
+        run: |
+          echo "::set-output name=version::$( \
+            curl -s https://versionhistory.googleapis.com/v1/chrome/platforms/linux/channels/stable/versions/all/releases?filter=endtime=none \
+              | jq -r '.releases[0].version'
+          )"
+
+      - name: Fail if Fetch Latest Version is null
+        if: steps.latest-fetcher.outputs.version == 'null'
+        run: exit 1
+
+      - name: Get UnixTime
+        id: get-unixtime
+        run:
+          echo "::set-output name=unixtime::$(/bin/date "+%s")"
+        shell: bash
+
+      - name: Restore Last Build Version Log
+        id: restore-last-version
+        uses: actions/cache@v2
+        with:
+          path: ~/version
+          key: version-${{ steps.get-unixtime.outputs.unixtime }}
+          restore-keys: |
+            version-
+
+      - name: Fetch Last Build Version
+        id: last-build-fetcher
+        run: |
+          if [[ -f ~/version/last ]]
+          then
+            version="$(cat ~/version/last)"
+          else
+            version="0"
+          fi
+          echo "::set-output name=version::${version}"
+        shell: bash
+
+      - name: Compare Version
+        id: version-comparer
+        run: |
+          # https://stackoverflow.com/a/4025065
+          vercomp () {
+              if [[ $1 == $2 ]]
+              then
+                  echo -n "0"
+                  return 0
+              fi
+              local IFS=.
+              local i ver1=($1) ver2=($2)
+              # fill empty fields in ver1 with zeros
+              for ((i=${#ver1[@]}; i<${#ver2[@]}; i++))
+              do
+                  ver1[i]=0
+              done
+              for ((i=0; i<${#ver1[@]}; i++))
+              do
+                  if [[ -z ${ver2[i]} ]]
+                  then
+                      # fill empty fields in ver2 with zeros
+                      ver2[i]=0
+                  fi
+                  if ((10#${ver1[i]} > 10#${ver2[i]}))
+                  then
+                      echo -n "1"
+                      return 0
+                  fi
+                  if ((10#${ver1[i]} < 10#${ver2[i]}))
+                  then
+                      echo -n "2"
+                      return 0
+                  fi
+              done
+              echo -n "0"
+              return 0
+          }
+
+          result=$(vercomp ${{ steps.latest-fetcher.outputs.version }} ${{ steps.last-build-fetcher.outputs.version }})
+          echo "::set-output name=result::${result}"
+
+          echo "Latest Version: ${{ steps.latest-fetcher.outputs.version }}"
+          echo "Last Build Version: ${{ steps.last-build-fetcher.outputs.version }}"
+          echo "Compare Result: ${result} (0:Latest==Last, 1:Latest>Last, 2:Latest<Last)"
+
+      - name: Trigger Image Build
+        if: steps.version-comparer.outputs.result != '0'
+        id: build-trigger
+        uses: peter-evans/repository-dispatch@v1
+        with:
+          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          event-type: chrome-update
+
+      - name: Store Last Build Version
+        if: steps.build-trigger.conclusion == 'success'
+        run: |
+          mkdir -p ~/version
+          echo -n '${{ steps.latest-fetcher.outputs.version }}' > ~/version/last
+        shell: bash
