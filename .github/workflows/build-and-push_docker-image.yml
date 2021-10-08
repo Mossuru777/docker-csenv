@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+  repository_dispatch:
+    types: [chrome-update]
+  workflow_dispatch:
 
 jobs:
   csenv:
