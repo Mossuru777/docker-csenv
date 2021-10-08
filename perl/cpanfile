@@ -453,6 +453,7 @@ requires 'local::lib', '2.000024';
 requires 'overload::numbers';
 requires 'version::vxs', '0.9924';
 
+requires 'Test::Exception';
 requires 'Test::More';
 requires 'Test::MockTime';
 requires 'Capture::Tiny';
