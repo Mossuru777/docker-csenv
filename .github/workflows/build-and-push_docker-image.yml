@@ -38,6 +38,13 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha
 
+      - name: Trigger Downstream (docker-csenv-for-dev) Image Build
+        uses: peter-evans/repository-dispatch@v1
+        with:
+          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          repository: mossuru777/docker-csenv-for-dev
+          event-type: upstream-update
+
   base_csenv-for-test:
     name: Base Image Build (base_csenv-for-test)
     needs: csenv
