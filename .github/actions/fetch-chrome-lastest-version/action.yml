@@ -1,0 +1,24 @@
+name: 'Fetch Chrome Latest Version'
+
+outputs:
+  version:
+    description: "Chrome Latest Version"
+    value: ${{ steps.latest-fetcher.outputs.version }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Fetch Latest Version
+      id: latest-fetcher
+      run: |
+        version="$( \
+          curl -s https://versionhistory.googleapis.com/v1/chrome/platforms/linux/channels/stable/versions/all/releases?filter=endtime=none \
+            | jq -r '.releases[0].version'
+        )"
+        if [[ "${version}" != "" && "${version}" != "null" ]]; then
+          echo "Fetch Chrome Latest Version: ${version}"
+          echo "::set-output name=version::${version}"
+        else
+          exit 1
+        fi
+      shell: bash

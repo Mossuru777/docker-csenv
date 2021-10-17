@@ -10,17 +10,14 @@ jobs:
     name: Check Chrome Update
     runs-on: ubuntu-20.04
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+
       - name: Fetch Latest Version
         id: latest-fetcher
-        run: |
-          echo "::set-output name=version::$( \
-            curl -s https://versionhistory.googleapis.com/v1/chrome/platforms/linux/channels/stable/versions/all/releases?filter=endtime=none \
-              | jq -r '.releases[0].version'
-          )"
-
-      - name: Fail if Fetch Latest Version is null
-        if: steps.latest-fetcher.outputs.version == 'null'
-        run: exit 1
+        uses: ./.github/actions/fetch-chrome-lastest-version
 
       - name: Get UnixTime
         id: get-unixtime

@@ -45,9 +45,26 @@ jobs:
           repository: mossuru777/docker-csenv-for-dev
           event-type: upstream-update
 
+  fetch-chrome-latest-version:
+    name: Fetch Chrome Latest Version
+    runs-on: ubuntu-20.04
+    outputs:
+      version: ${{ steps.fetcher.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+
+      - name: Fetch Chrome Latest Version
+        id: fetcher
+        uses: ./.github/actions/fetch-chrome-lastest-version
+
   base_csenv-for-test:
     name: Base Image Build (base_csenv-for-test)
-    needs: csenv
+    needs:
+      - csenv
+      - fetch-chrome-latest-version
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout code
@@ -91,7 +108,9 @@ jobs:
 
   csenv-for-test-litespeed-general:
     name: Build and Push csenv:test-litespeed-general-latest (csenv-for-test-litespeed-general)
-    needs: base_csenv-for-test-litespeed
+    needs:
+      - base_csenv-for-test-litespeed
+      - fetch-chrome-latest-version
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout code
@@ -116,11 +135,14 @@ jobs:
           push: true
           tags: |
             ${{ secrets.DOCKER_HUB_USERNAME }}/csenv:test-litespeed-general-latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/csenv:test-litespeed-general-${{ needs.fetch-chrome-latest-version.outputs.version }}
           cache-from: type=gha
 
   csenv-for-test-litespeed-circleci:
     name: Build and Push csenv:test-litespeed-circleci-latest (csenv-for-test-litespeed-circleci)
-    needs: base_csenv-for-test-litespeed
+    needs:
+      - base_csenv-for-test-litespeed
+      - fetch-chrome-latest-version
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout code
@@ -145,6 +167,7 @@ jobs:
           push: true
           tags: |
             ${{ secrets.DOCKER_HUB_USERNAME }}/csenv:test-litespeed-circleci-latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/csenv:test-litespeed-circleci-${{ needs.fetch-chrome-latest-version.outputs.version }}
           cache-from: type=gha
 
   base_csenv-for-test-apache:
@@ -171,7 +194,9 @@ jobs:
 
   csenv-for-test-apache-general:
     name: Build and Push csenv:test-apache-general-latest (csenv-for-test-apache-general)
-    needs: base_csenv-for-test-apache
+    needs:
+      - base_csenv-for-test-apache
+      - fetch-chrome-latest-version
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout code
@@ -196,11 +221,14 @@ jobs:
           push: true
           tags: |
             ${{ secrets.DOCKER_HUB_USERNAME }}/csenv:test-apache-general-latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/csenv:test-apache-general-${{ needs.fetch-chrome-latest-version.outputs.version }}
           cache-from: type=gha
 
   csenv-for-test-apache-circleci:
     name: Build and Push csenv:test-apache-circleci-latest (csenv-for-test-apache-circleci)
-    needs: base_csenv-for-test-apache
+    needs:
+      - base_csenv-for-test-apache
+      - fetch-chrome-latest-version
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout code
@@ -225,4 +253,5 @@ jobs:
           push: true
           tags: |
             ${{ secrets.DOCKER_HUB_USERNAME }}/csenv:test-apache-circleci-latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/csenv:test-apache-circleci-${{ needs.fetch-chrome-latest-version.outputs.version }}
           cache-from: type=gha
