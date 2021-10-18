@@ -94,15 +94,7 @@ jobs:
 
       - name: Trigger Image Build
         if: steps.version-comparer.outputs.result != '0'
-        id: build-trigger
         uses: peter-evans/repository-dispatch@v1
         with:
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
           event-type: chrome-update
-
-      - name: Store Last Build Version
-        if: steps.build-trigger.conclusion == 'success'
-        run: |
-          mkdir -p ~/version
-          echo -n '${{ steps.latest-fetcher.outputs.version }}' > ~/version/last
-        shell: bash
