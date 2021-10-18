@@ -308,30 +308,3 @@ jobs:
             ${{ secrets.DOCKER_HUB_USERNAME }}/csenv:test-apache-circleci-latest
             ${{ secrets.DOCKER_HUB_USERNAME }}/csenv:test-apache-circleci-${{ needs.fetch-chrome-latest-version.outputs.version }}
           cache-from: type=gha
-
-  cache-build-chrome-version:
-    name: Cache Build Chrome Version
-    needs:
-      - fetch-chrome-latest-version
-      - csenv-for-test-litespeed-general
-      - csenv-for-test-litespeed-circleci
-      - csenv-for-test-apache-general
-      - csenv-for-test-apache-circleci
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Get UnixTime
-        id: get-unixtime
-        run: echo "::set-output name=unixtime::$(/bin/date "+%s")"
-        shell: bash
-
-      - name: Setup cache Action
-        uses: actions/cache@v2
-        with:
-          path: ~/version
-          key: version-${{ steps.get-unixtime.outputs.unixtime }}
-
-      - name: Store Build Chrome Version To Cache
-        run: |
-          mkdir -p ~/version
-          echo -n '${{ needs.fetch-chrome-latest-version.outputs.version }}' > ~/version/last
-        shell: bash
