@@ -15,8 +15,8 @@ RUN mkdir -p /var/www/html \
     && apt-get -q -y install --no-install-recommends \
          sudo \
 
-# Install Node.js (current)
-    && curl -fsSL https://deb.nodesource.com/setup_current.x | bash - \
+# Install Node.js (LTS)
+    && curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - \
     && apt-get -q -y install --no-install-recommends \
          nodejs \
 
