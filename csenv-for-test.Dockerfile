@@ -7,8 +7,12 @@
 ################################################################################
 FROM mossuru777/csenv:latest AS base_csenv-for-test
 
+# Echoing dummy ARGs for cache control of builds
+ARG CHROME_VERSION="(not set)"
+RUN echo "Chrome Version: ${CHROME_VERSION}" > /dev/null \
+
 # Create /var/www/html
-RUN mkdir -p /var/www/html \
+    && mkdir -p /var/www/html \
 
 # Install common packages
     && apt-get -q update \

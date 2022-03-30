@@ -127,13 +127,17 @@ jobs:
           file: ./csenv-for-test.Dockerfile
           context: .
           target: base_csenv-for-test
+          build-args: |
+            CHROME_VERSION=${{ needs.fetch-chrome-latest-version.outputs.version }}
           push: false
           cache-from: type=gha
           cache-to: type=gha
 
   base_csenv-for-test-litespeed:
     name: Base Image Build (base_csenv-for-test-litespeed)
-    needs: base_csenv-for-test
+    needs:
+      - base_csenv-for-test
+      - fetch-chrome-latest-version
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout code
@@ -150,6 +154,8 @@ jobs:
           file: ./csenv-for-test.Dockerfile
           context: .
           target: base_csenv-for-test-litespeed
+          build-args: |
+            CHROME_VERSION=${{ needs.fetch-chrome-latest-version.outputs.version }}
           push: false
           cache-from: type=gha
           cache-to: type=gha
@@ -181,6 +187,8 @@ jobs:
           file: ./csenv-for-test.Dockerfile
           context: .
           target: csenv-for-test-litespeed-general
+          build-args: |
+            CHROME_VERSION=${{ needs.fetch-chrome-latest-version.outputs.version }}
           push: true
           tags: |
             ${{ secrets.DOCKER_HUB_USERNAME }}/csenv:test-litespeed-general-latest
@@ -214,6 +222,8 @@ jobs:
           file: ./csenv-for-test.Dockerfile
           context: .
           target: csenv-for-test-litespeed-circleci
+          build-args: |
+            CHROME_VERSION=${{ needs.fetch-chrome-latest-version.outputs.version }}
           push: true
           tags: |
             ${{ secrets.DOCKER_HUB_USERNAME }}/csenv:test-litespeed-circleci-latest
@@ -222,7 +232,9 @@ jobs:
 
   base_csenv-for-test-apache:
     name: Base Image Build (base_csenv-for-test-apache)
-    needs: base_csenv-for-test
+    needs:
+      - base_csenv-for-test
+      - fetch-chrome-latest-version
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout code
@@ -239,6 +251,8 @@ jobs:
           file: ./csenv-for-test.Dockerfile
           context: .
           target: base_csenv-for-test-apache
+          build-args: |
+            CHROME_VERSION=${{ needs.fetch-chrome-latest-version.outputs.version }}
           push: false
           cache-from: type=gha
           cache-to: type=gha
@@ -270,6 +284,8 @@ jobs:
           file: ./csenv-for-test.Dockerfile
           context: .
           target: csenv-for-test-apache-general
+          build-args: |
+            CHROME_VERSION=${{ needs.fetch-chrome-latest-version.outputs.version }}
           push: true
           tags: |
             ${{ secrets.DOCKER_HUB_USERNAME }}/csenv:test-apache-general-latest
@@ -303,6 +319,8 @@ jobs:
           file: ./csenv-for-test.Dockerfile
           context: .
           target: csenv-for-test-apache-circleci
+          build-args: |
+            CHROME_VERSION=${{ needs.fetch-chrome-latest-version.outputs.version }}
           push: true
           tags: |
             ${{ secrets.DOCKER_HUB_USERNAME }}/csenv:test-apache-circleci-latest
