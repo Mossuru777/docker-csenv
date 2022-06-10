@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 1
 
@@ -27,7 +27,7 @@ jobs:
 
       - name: Restore Last Build Version Log
         id: restore-last-version
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/version
           key: version-${{ steps.get-unixtime.outputs.unixtime }}
@@ -95,7 +95,7 @@ jobs:
       - name: Trigger Image Build
         if: steps.version-comparer.outputs.result != '0'
         id: build-trigger
-        uses: peter-evans/repository-dispatch@v1
+        uses: peter-evans/repository-dispatch@v2
         with:
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
           event-type: chrome-update
