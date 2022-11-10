@@ -1,4 +1,5 @@
 name: 'Fetch Chrome Latest Version'
+description: 'Fetch Google Chrome (stable, linux) latest version.'
 
 outputs:
   version:
@@ -11,14 +12,36 @@ runs:
     - name: Fetch Latest Version
       id: latest-fetcher
       run: |
-        version="$( \
-          curl -s https://versionhistory.googleapis.com/v1/chrome/platforms/linux/channels/stable/versions/all/releases?filter=endtime=none \
-            | jq -r '.releases[0].version'
-        )"
-        if [[ "${version}" != "" && "${version}" != "null" ]]; then
+        fetch() {
+          cmds=(
+            # 1. Google VersionHistory API
+            "curl -s https://versionhistory.googleapis.com/v1/chrome/platforms/linux/channels/stable/versions/all/releases?filter=endtime=none \
+                          | jq -r '.releases[0].version'"
+        
+            # 2. OmahaProxy API
+            "curl -s https://omahaproxy.appspot.com/linux?channel=stable"
+          )
+        
+          # fetch
+          for cmd in "${cmds[@]}"; do
+            version="$(eval "${cmd}")"
+            if [[ "${version}" =~ ^([0-9]+\.){3}[0-9]+$ ]]; then
+              # found
+              echo "${version}"
+              return 0
+            fi
+          done
+        
+          # not found...
+          echo ""
+          return 1
+        }
+
+        if version="$(fetch)"; then
           echo "Fetch Chrome Latest Version: ${version}"
           echo "::set-output name=version::${version}"
         else
+          echo "Can't fetch Chrome latest version!" 1>&2
           exit 1
         fi
       shell: bash
