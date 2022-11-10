@@ -22,7 +22,7 @@ jobs:
       - name: Get UnixTime
         id: get-unixtime
         run:
-          echo "::set-output name=unixtime::$(/bin/date "+%s")"
+          echo "unixtime=$(/bin/date "+%s")" >> $GITHUB_OUTPUT
         shell: bash
 
       - name: Restore Last Build Version Log
@@ -43,7 +43,7 @@ jobs:
           else
             version="0"
           fi
-          echo "::set-output name=version::${version}"
+          echo "version=${version}" >> $GITHUB_OUTPUT
         shell: bash
 
       - name: Compare Version
@@ -86,7 +86,7 @@ jobs:
           }
 
           result=$(vercomp ${{ steps.latest-fetcher.outputs.version }} ${{ steps.last-build-fetcher.outputs.version }})
-          echo "::set-output name=result::${result}"
+          echo "result=${result}" >> $GITHUB_OUTPUT
 
           echo "Latest Version: ${{ steps.latest-fetcher.outputs.version }}"
           echo "Last Build Version: ${{ steps.last-build-fetcher.outputs.version }}"

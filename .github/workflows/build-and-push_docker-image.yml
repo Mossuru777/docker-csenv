@@ -39,7 +39,7 @@ jobs:
         id: compare-cpanfile-hash
         run: |
           current_hash="$(sha512sum ./perl/cpanfile | awk '{print $1}')"
-          echo "::set-output name=current-hash::${current_hash}"
+          echo "current-hash=${current_hash}" >> $GITHUB_OUTPUT
 
           last_hash="$(cat ~/cpanfile_hash/last)"
 
@@ -48,7 +48,7 @@ jobs:
           else
             need_build="true"
           fi
-          echo "::set-output name=need-build::${need_build}"
+          echo "need-build=${need_build}" >> $GITHUB_OUTPUT
 
           echo "*** Hash Compare Status for ./perl/cpanfile ***"
           echo "Current: ${current_hash}"

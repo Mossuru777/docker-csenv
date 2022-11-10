@@ -39,7 +39,7 @@ runs:
 
         if version="$(fetch)"; then
           echo "Fetch Chrome Latest Version: ${version}"
-          echo "::set-output name=version::${version}"
+          echo "version=${version}" >> $GITHUB_OUTPUT
         else
           echo "Can't fetch Chrome latest version!" 1>&2
           exit 1
