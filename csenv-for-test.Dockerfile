@@ -19,9 +19,13 @@ RUN echo "Chrome Version: ${CHROME_VERSION}" > /dev/null \
     && apt-get -q -y install --no-install-recommends \
          sudo \
 
-# Install Node.js (LTS)
-    && curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - \
-    && apt-get -q -y install --no-install-recommends \
+# Install Node.js (20, LTS) \
+    && apt-get -y install ca-certificates curl gnupg \
+    && mkdir -p /etc/apt/keyrings \
+    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
+    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list \
+    && apt-get update \
+    && apt-get -y install --no-install-recommends \
          nodejs \
 
 # Install Google Chrome
