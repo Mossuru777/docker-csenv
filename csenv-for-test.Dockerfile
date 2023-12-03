@@ -51,7 +51,11 @@ FROM base_csenv-for-test AS base_csenv-for-test-litespeed
 
 # Install & Setup LiteSpeed
 ENV DEBIAN_FRONTEND noninteractive
-RUN wget -q -O - http://rpms.litespeedtech.com/debian/enable_lst_debian_repo.sh | bash \
+RUN echo "deb http://rpms.litespeedtech.com/debian/ bookworm main" | tee /etc/apt/sources.list.d/lst_debian_repo.list \
+    && echo "#deb http://rpms.litespeedtech.com/edge/debian/ bookworm main" | tee -a /etc/apt/sources.list.d/lst_debian_repo.list \
+    && wget -O /etc/apt/trusted.gpg.d/lst_debian_repo.gpg http://rpms.litespeedtech.com/debian/lst_debian_repo.gpg \
+    && wget -O /etc/apt/trusted.gpg.d/lst_repo.gpg http://rpms.litespeedtech.com/debian/lst_repo.gpg \
+    && apt-get -q update \
     && apt-get -q -y install --no-install-recommends \
          openlitespeed \
 #--- workaround for "[STDERR] PHP Notice:  Undefined index: LS_AI_MIME_TYPE in /usr/local/lsws/share/autoindex/default.php on line 299"
