@@ -2,7 +2,7 @@
 # CSEnv
 # Stage Name: csenv
 ################################################################################
-FROM perl:5.26.3-buster
+FROM mossuru777/perl:5.26.3-bookworm
 MAINTAINER Mossuru777 "mossuru777@gmail.com"
 
 COPY perl/cpanfile /tmp/
